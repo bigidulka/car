@@ -1,6 +1,8 @@
 #include<iostream>
 #include<conio.h>
 #include<thread>
+#include <windows.h>
+
 using namespace std;
 
 const unsigned int default_tank_volume = 60;
@@ -123,6 +125,7 @@ class Car
 	bool driver_inside;
 	bool gas_pedal;
 	unsigned int acceleration;
+	unsigned int to_brake;
 
 	struct Control
 	{
@@ -143,6 +146,7 @@ public:
 		cout << "CarIsReady:\t" << this << endl;
 		gas_pedal = false;
 		acceleration = 5;
+		to_brake = 5;
 	}
 	~Car()
 	{
@@ -202,7 +206,13 @@ public:
 			system("CLS");
 			cout << "Engine is:\t" << (engine.is_started() ? "Started" : "Stopped") << endl;
 			cout << "Fuel level:\t" << tank.get_fuel_level() << endl;
-			if (tank.get_fuel_level() < tank.get_min_level()) cout << "LOW FUEL" << endl;
+			if (tank.get_fuel_level() < tank.get_min_level())
+			{
+				HANDLE hOUTPUT = GetStdHandle(STD_OUTPUT_HANDLE);
+				SetConsoleTextAttribute(hOUTPUT, FOREGROUND_RED);
+				cout << "LOW FUEL" << endl;
+				SetConsoleTextAttribute(hOUTPUT, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+			}
 			cout << "Speed:" << speed << "\t";
 			cout << "MaxSpeed: " << MAX_SPEED << endl;
 			std::this_thread::sleep_for(1s);
@@ -235,6 +245,11 @@ public:
 					accelerate();
 				}
 				break;
+			case 'S': case 's':
+				if (driver_inside && engine.is_started())
+				{
+					brake();
+				}
 			case Enter:
 				if (is_driver_inside()) get_out();
 				else get_in(); break;
@@ -244,7 +259,7 @@ public:
 				cout << "Hava La`vista baby" << endl; break;
 			}
 			//if (is_driver_inside())panel();
-			std::this_thread::sleep_for(0.1s);
+			std::this_thread::sleep_for(1ms);
 			if (speed > 0 && !control.free_wheeling_thread.joinable())control.free_wheeling_thread = std::thread(&Car::free_wheeling, this);
 			else if (control.free_wheeling_thread.joinable())control.free_wheeling_thread.join();
 		} while (key != Escape);
@@ -252,8 +267,12 @@ public:
 	void accelerate()
 	{
 		speed += acceleration;
-		/*using namespace std::literals::chrono_literals;
-		std::this_thread::sleep_for(1s);*/
+		using namespace std::literals::chrono_literals;
+		std::this_thread::sleep_for(1ms);
+	}
+	void brake()
+	{
+		speed += to_brake;
 	}
 	void free_wheeling()
 	{
